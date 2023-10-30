@@ -1,8 +1,8 @@
 import BuildHelper._
 
-val ZioVersion       = "2.0.6"
-val H2Version        = "2.1.214"
-val ZioSchemaVersion = "0.4.8"
+val ZioVersion       = "2.0.18"
+val H2Version        = "2.2.224"
+val ZioSchemaVersion = "0.4.14"
 
 name := "zio-jdbc"
 
@@ -33,7 +33,7 @@ lazy val root = project
   .settings(
     publish / skip := true
   )
-  .aggregate(core, docs, examples)
+  .aggregate(core, docs, examples, integration)
 
 lazy val core = project
   .in(file("core"))
@@ -47,9 +47,8 @@ lazy val core = project
       "dev.zio"       %% "zio-test-sbt" % ZioVersion % Test,
       "com.h2database" % "h2"           % H2Version  % Test
     ),
-    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework")),
-    Test / fork    := true,
-    run / fork     := true
+    Test / fork := true,
+    run / fork  := true
   )
 
 lazy val docs = project
@@ -85,12 +84,11 @@ lazy val integration = project
     publish / skip := true,
     Test / fork    := true,
     libraryDependencies ++= Seq(
-      "org.testcontainers" % "postgresql"   % "1.19.0"   % Test,
+      "org.testcontainers" % "postgresql"   % "1.19.1"   % Test,
       "org.postgresql"     % "postgresql"   % "42.6.0"   % Test,
       "dev.zio"           %% "zio-test"     % ZioVersion % Test,
       "dev.zio"           %% "zio-test-sbt" % ZioVersion % Test,
       "org.slf4j"          % "slf4j-api"    % "2.0.9"    % Test,
       "org.slf4j"          % "slf4j-simple" % "2.0.9"    % Test
-    ),
-    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
+    )
   )

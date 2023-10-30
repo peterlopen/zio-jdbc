@@ -29,10 +29,15 @@ object SqlFragmentSpec extends ZIOSpecDefault {
               s"Sql(select name, age from users where id = ?, $id)"
           )
         } +
-        test("ensure no empty Syntax instances") {
+        test("Empty Segment instances are insignificant") {
           val age  = 42
           val name = "sholmes"
-          assertTrue(sql"select name, age from users where age = $age and name = $name".segments.size == 4)
+          val sql  = sql"select name, age from users where age = $age and name = $name"
+          assertTrue(
+            sql.segments.size == 5,
+            sql.segments.last == SqlFragment.Segment.Empty,
+            sql.toString == "Sql(select name, age from users where age = ? and name = ?, 42, sholmes)"
+          )
         } +
         test("interpolate Sql values") {
           val tableName    = sql"table1"
@@ -46,7 +51,7 @@ object SqlFragmentSpec extends ZIOSpecDefault {
         } +
         test("type safe interpolation") {
           final case class Foo(value: String)
-          implicit val fooParamSetter: SqlFragment.Setter[Foo] = SqlFragment.Setter[String]().contramap(_.toString)
+          implicit val fooParamSetter: SqlFragment.Setter[Foo] = SqlFragment.Setter[String].contramap(_.toString)
 
           val testSql = sql"${Foo("test")}"
 
@@ -247,6 +252,15 @@ object SqlFragmentSpec extends ZIOSpecDefault {
           assertTrue(
             result.toString == "Sql(UPDATE persons)"
           )
+        } +
+        test("'interpolation <=> ++ operator' equivalence") {
+          val s1 = sql"${"1"}::varchar"
+          val s2 = (sql"${"1"}" ++ sql"::varchar")
+
+          assertTrue(
+            s1.toString == "Sql(?::varchar, 1)",
+            s1.toString == s2.toString
+          )
         }
     } +
       suite("SqlFragment ResultSet tests") {
@@ -320,7 +334,7 @@ object SqlFragmentSpec extends ZIOSpecDefault {
 
               object UserNoId {
                 implicit val jdbcDecoder: JdbcDecoder[UserNoId] =
-                  JdbcDecoder[(String, Int)]().map[UserNoId](t => UserNoId(t._1, t._2))
+                  JdbcDecoder[(String, Int)].map[UserNoId](t => UserNoId(t._1, t._2))
 
                 implicit val jdbcEncoder: JdbcEncoder[UserNoId] = (value: UserNoId) => {
                   val name = value.name
